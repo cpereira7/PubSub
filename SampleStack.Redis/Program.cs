@@ -1,5 +1,5 @@
 ﻿using StackExchange.Redis;
-using System.Runtime.Loader;
+using System.Text.Json;
 
 namespace SampleStack.Redis
 {
@@ -7,7 +7,7 @@ namespace SampleStack.Redis
     {
         private const string RedisConnectionString = "redis:6379";
         private static ConnectionMultiplexer connection = ConnectionMultiplexer.Connect(RedisConnectionString);
-        private const string Channel = "test-channel";
+        private const string Channel = "random-numbers";
 
         static void Main(string[] args)
         {
@@ -43,12 +43,20 @@ namespace SampleStack.Redis
             Console.WriteLine("Writing on test-channel...");
 
             var pubsub = connection.GetSubscriber();
+            
             for (int i = 0; i < 10; i++)
             {
-                pubsub.PublishAsync(Channel, "This is a test message!!", CommandFlags.FireAndForget);
+                int randomNumber = new Random().Next(1, 101);
+                var msg = new
+                {
+                    Value = randomNumber,
+                    Timestamp = DateTime.UtcNow
+                };
+
+                string json = JsonSerializer.Serialize(msg);
+                pubsub.Publish(Channel, json);
+                Console.WriteLine($"Published: {json}");
             }
-            
-            Console.Write("Messages Successfully sent to test-channel");
         }
 
         static void RunSubscriber()
