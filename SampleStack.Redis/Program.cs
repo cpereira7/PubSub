@@ -11,6 +11,8 @@ namespace SampleStack.Redis
 
         static void Main(string[] args)
         {
+            var exitEvent = new ManualResetEventSlim(false);
+
             string mode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
 
             if (mode == "PUB")
@@ -25,6 +27,15 @@ namespace SampleStack.Redis
             {
                 Console.WriteLine("Invalid or missing MODE. Set MODE=P for Publisher or MODE=S for Subscriber.");
             }
+
+            Console.CancelKeyPress += (sender, e) =>
+            {
+                Console.WriteLine("Shutting down...");
+                exitEvent.Set(); 
+                e.Cancel = true;
+            };
+
+            exitEvent.Wait();
         }
 
         static void RunPublisher()
