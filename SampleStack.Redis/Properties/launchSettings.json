@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "SampleStack.Redis": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

@@ -1,29 +1,29 @@
 ﻿using StackExchange.Redis;
+using System.Runtime.Loader;
 
 namespace SampleStack.Redis
 {
     internal static class Program
     {
-        private const string RedisConnectionString = "localhost:6379";
+        private const string RedisConnectionString = "redis:6379";
         private static ConnectionMultiplexer connection = ConnectionMultiplexer.Connect(RedisConnectionString);
         private const string Channel = "test-channel";
 
         static void Main(string[] args)
         {
-            Console.WriteLine("Select Mode: (P)ublisher / (S)ubscriber");
-            string mode = Console.ReadLine()?.Trim().ToUpper();
+            string mode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
 
-            if (mode == "P")
+            if (mode == "PUB")
             {
                 RunPublisher();
             }
-            else if (mode == "S")
+            else if (mode == "SUB")
             {
                 RunSubscriber();
             }
             else
             {
-                Console.WriteLine("Invalid option. Exiting...");
+                Console.WriteLine("Invalid or missing MODE. Set MODE=P for Publisher or MODE=S for Subscriber.");
             }
         }
 
@@ -34,7 +34,7 @@ namespace SampleStack.Redis
             var pubsub = connection.GetSubscriber();
             for (int i = 0; i < 10; i++)
             {
-            pubsub.PublishAsync(Channel, "This is a test message!!", CommandFlags.FireAndForget);
+                pubsub.PublishAsync(Channel, "This is a test message!!", CommandFlags.FireAndForget);
             }
             
             Console.Write("Messages Successfully sent to test-channel");
