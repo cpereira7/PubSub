@@ -43,7 +43,8 @@ namespace SampleStack.Redis
             Console.WriteLine("Writing on test-channel...");
 
             var pubsub = connection.GetSubscriber();
-            
+            var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
+
             for (int i = 0; i < 10; i++)
             {
                 int randomNumber = new Random().Next(1, 101);
@@ -54,7 +55,7 @@ namespace SampleStack.Redis
                 };
 
                 string json = JsonSerializer.Serialize(msg);
-                pubsub.Publish(Channel, json);
+                pubsub.Publish(channel, json);
                 Console.WriteLine($"Published: {json}");
             }
         }
@@ -64,7 +65,9 @@ namespace SampleStack.Redis
             Console.WriteLine("Listening on test-channel...");
 
             var pubsub = connection.GetSubscriber();
-            pubsub.Subscribe(Channel, (channel, message) =>
+            var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
+
+            pubsub.Subscribe(channel, (channel, message) =>
             {
                 Console.WriteLine("Message received: " + message);
             });
