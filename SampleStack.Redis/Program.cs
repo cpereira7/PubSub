@@ -40,7 +40,7 @@ namespace SampleStack.Redis
 
         static void RunPublisher()
         {
-            Console.WriteLine("Writing on test-channel...");
+            Console.WriteLine("Writing on random-numbers...");
 
             string publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
 
@@ -50,7 +50,7 @@ namespace SampleStack.Redis
             for (int i = 0; i < 10; i++)
             {
                 int randomNumber = new Random().Next(1, 101);
-                var msg = new
+                var msg = new NumberMessage
                 {
                     Publisher = publisherId,
                     Value = randomNumber,
@@ -60,12 +60,17 @@ namespace SampleStack.Redis
                 string json = JsonSerializer.Serialize(msg);
                 pubsub.Publish(channel, json);
                 Console.WriteLine($"Published: {json}");
+
+                int sleepDuration = new Random().Next(1, 2501);
+                Thread.Sleep(sleepDuration);
             }
         }
 
         static void RunSubscriber()
         {
-            Console.WriteLine("Listening on test-channel...");
+            Console.WriteLine("Listening on random-numbers...");
+
+            var np = new NumbersProcessor();
 
             var pubsub = connection.GetSubscriber();
             var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
@@ -73,6 +78,8 @@ namespace SampleStack.Redis
             pubsub.Subscribe(channel, (channel, message) =>
             {
                 Console.WriteLine("Message received: " + message);
+
+                np.ProcessMessage(message);
             });
 
             Console.ReadLine();
