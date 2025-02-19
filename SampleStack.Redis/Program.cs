@@ -42,6 +42,8 @@ namespace SampleStack.Redis
         {
             Console.WriteLine("Writing on test-channel...");
 
+            string publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
+
             var pubsub = connection.GetSubscriber();
             var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
 
@@ -50,6 +52,7 @@ namespace SampleStack.Redis
                 int randomNumber = new Random().Next(1, 101);
                 var msg = new
                 {
+                    Publisher = publisherId,
                     Value = randomNumber,
                     Timestamp = DateTime.UtcNow
                 };

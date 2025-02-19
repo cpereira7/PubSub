@@ -14,7 +14,8 @@
     build: 
       context: ../
       dockerfile: ./SampleStack.Redis/Dockerfile
-    container_name: redis_publisher
+    deploy: 
+      replicas: 2
     environment:
       - MODE=PUB
     depends_on:
