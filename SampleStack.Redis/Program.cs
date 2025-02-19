@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using SampleStack.Redis.PubSub;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace SampleStack.Redis
@@ -21,7 +22,8 @@ namespace SampleStack.Redis
             }
             else if (mode == "SUB")
             {
-                RunSubscriber();
+                SubscriberService subscriber = new(connection);
+                subscriber.StartAsync().Wait();
             }
             else
             {
@@ -47,7 +49,7 @@ namespace SampleStack.Redis
             var pubsub = connection.GetSubscriber();
             var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
 
-            for (int i = 0; i < 10; i++)
+            while(true)
             {
                 int randomNumber = new Random().Next(1, 101);
                 var msg = new NumberMessage
@@ -64,25 +66,6 @@ namespace SampleStack.Redis
                 int sleepDuration = new Random().Next(1, 2501);
                 Thread.Sleep(sleepDuration);
             }
-        }
-
-        static void RunSubscriber()
-        {
-            Console.WriteLine("Listening on random-numbers...");
-
-            var np = new NumbersProcessor();
-
-            var pubsub = connection.GetSubscriber();
-            var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
-
-            pubsub.Subscribe(channel, (channel, message) =>
-            {
-                Console.WriteLine("Message received: " + message);
-
-                np.ProcessMessage(message);
-            });
-
-            Console.ReadLine();
         }
     }
 }
