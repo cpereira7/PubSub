@@ -8,7 +8,6 @@ namespace SampleStack.Redis
     {
         private const string RedisConnectionString = "redis:6379";
         private static ConnectionMultiplexer connection = ConnectionMultiplexer.Connect(RedisConnectionString);
-        private const string Channel = "random-numbers";
 
         static void Main(string[] args)
         {
@@ -18,11 +17,12 @@ namespace SampleStack.Redis
 
             if (mode == "PUB")
             {
-                RunPublisher();
+                PublisherService publisher = new(connection, new NumbersGenerator());
+                publisher.StartAsync().Wait();
             }
             else if (mode == "SUB")
             {
-                SubscriberService subscriber = new(connection);
+                SubscriberService subscriber = new(connection, new NumbersProcessor());
                 subscriber.StartAsync().Wait();
             }
             else
@@ -38,34 +38,6 @@ namespace SampleStack.Redis
             };
 
             exitEvent.Wait();
-        }
-
-        static void RunPublisher()
-        {
-            Console.WriteLine("Writing on random-numbers...");
-
-            string publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
-
-            var pubsub = connection.GetSubscriber();
-            var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
-
-            while(true)
-            {
-                int randomNumber = new Random().Next(1, 101);
-                var msg = new NumberMessage
-                {
-                    Publisher = publisherId,
-                    Value = randomNumber,
-                    Timestamp = DateTime.UtcNow
-                };
-
-                string json = JsonSerializer.Serialize(msg);
-                pubsub.Publish(channel, json);
-                Console.WriteLine($"Published: {json}");
-
-                int sleepDuration = new Random().Next(1, 2501);
-                Thread.Sleep(sleepDuration);
-            }
         }
     }
 }
