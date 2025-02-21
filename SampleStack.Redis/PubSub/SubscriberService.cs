@@ -6,7 +6,6 @@ namespace SampleStack.Redis.PubSub
 {
     internal class SubscriberService : PubSubService
     {
-        private const string Channel = "random-numbers";
         private readonly ILogger<SubscriberService> _logger;
         private readonly NumbersProcessor _numbersProcessor;
 
@@ -34,7 +33,7 @@ namespace SampleStack.Redis.PubSub
         private void SubscriberNumbersChannel()
         {
             var pubsub = _redis.GetSubscriber();
-            var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
+            var channel = new RedisChannel(PubSubChannels.RandomNumbers, RedisChannel.PatternMode.Literal);
 
             pubsub.Subscribe(channel, (channel, message) =>
             {
