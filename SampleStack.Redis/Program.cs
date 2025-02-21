@@ -1,43 +1,41 @@
-﻿using SampleStack.Redis.PubSub;
-using StackExchange.Redis;
-using System.Text.Json;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using SampleStack.Redis.PubSub;
 
 namespace SampleStack.Redis
 {
     internal static class Program
     {
-        private const string RedisConnectionString = "redis:6379";
-        private static ConnectionMultiplexer connection = ConnectionMultiplexer.Connect(RedisConnectionString);
-
         static void Main(string[] args)
         {
+            var host = Host.CreateDefaultBuilder(args).ConfigureRedisServices().Build();
+
             var exitEvent = new ManualResetEventSlim(false);
 
-            string mode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
+            var service = host.Services.GetRequiredService<IRedisService>();
 
-            if (mode == "PUB")
+            service.CacheDisconnected += (sender, e) =>
             {
-                PublisherService publisher = new(connection, new NumbersGenerator());
-                publisher.StartAsync().Wait();
-            }
-            else if (mode == "SUB")
+                Console.WriteLine("Redis connection failed.");
+                exitEvent.Set();
+            };
+
+            service.CacheReConnected += (sender, e) =>
             {
-                SubscriberService subscriber = new(connection, new NumbersProcessor());
-                subscriber.StartAsync().Wait();
-            }
-            else
-            {
-                Console.WriteLine("Invalid or missing MODE. Set MODE=P for Publisher or MODE=S for Subscriber.");
-            }
+                Console.WriteLine("Redis connection restored.");
+            };
+
+            service?.StartAsync().Wait();
 
             Console.CancelKeyPress += (sender, e) =>
             {
                 Console.WriteLine("Shutting down...");
-                exitEvent.Set(); 
+                exitEvent.Set();
                 e.Cancel = true;
             };
 
             exitEvent.Wait();
         }
+
     }
 }
