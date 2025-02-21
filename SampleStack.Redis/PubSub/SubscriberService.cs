@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using SampleStack.Redis.Numbers;
+using StackExchange.Redis;
 
 namespace SampleStack.Redis.PubSub
 {
@@ -29,8 +30,6 @@ namespace SampleStack.Redis.PubSub
 
         private void SubscriberNumbersChannel()
         {
-            Console.WriteLine("Listening on random-numbers...");
-
             var pubsub = _redis.GetSubscriber();
             var channel = new RedisChannel(Channel, RedisChannel.PatternMode.Literal);
 
@@ -40,8 +39,6 @@ namespace SampleStack.Redis.PubSub
 
                 numbersProcessor.ProcessMessage(message!);
             });
-
-            Console.ReadLine();
         }
     }
 }

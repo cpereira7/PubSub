@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using SampleStack.Redis.Configuration;
 using SampleStack.Redis.PubSub;
 
 namespace SampleStack.Redis

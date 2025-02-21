@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 
-namespace SampleStack.Redis
+namespace SampleStack.Redis.Numbers
 {
     internal class NumbersProcessor
     {
@@ -39,33 +39,27 @@ namespace SampleStack.Redis
 
         private void ProcessValues()
         {
-            // Create a working list of publishers.
             var publishers = new List<string>(_publisherQueues.Keys);
 
-            // Only process if there are at least 2 publishers.
             if (publishers.Count < 2)
                 return;
 
             while (publishers.Count > 0)
             {
-                // Get the list of publishers that have at least one queued value.
                 var activePublishers = publishers
                     .Where(p => _publisherQueues[p].Count > 0)
                     .ToList();
 
-                // If fewer than 2 publishers are active, exit the loop.
                 if (activePublishers.Count < 2)
                     break;
 
                 var values = new List<int>();
 
-                // Process exactly one value from each active publisher.
                 foreach (var publisher in activePublishers)
                 {
                     values.Add(_publisherQueues[publisher].Dequeue());
                 }
 
-                // Compute the sum and product of the values.
                 int totalSum = values.Sum();
                 int totalProduct = values.Aggregate(1, (acc, val) => acc * val);
 
@@ -73,11 +67,8 @@ namespace SampleStack.Redis
                 Console.WriteLine($"   Sum: {string.Join(" + ", values)} = {totalSum}");
                 Console.WriteLine($"   Product: {string.Join(" * ", values)} = {totalProduct}");
 
-                // Remove publishers that now have empty queues.
                 publishers.RemoveAll(p => _publisherQueues[p].Count == 0);
             }
         }
-
-
     }
 }

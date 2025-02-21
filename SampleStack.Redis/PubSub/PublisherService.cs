@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using SampleStack.Redis.Numbers;
+using StackExchange.Redis;
 using System.Text.Json;
 
 namespace SampleStack.Redis.PubSub
@@ -22,8 +23,6 @@ namespace SampleStack.Redis.PubSub
         
         private void PublishNumbers()
         {
-            Console.WriteLine("Writing on random-numbers...");
-
             string publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
 
             var pubsub = _redis.GetSubscriber();
@@ -39,7 +38,6 @@ namespace SampleStack.Redis.PubSub
 
                 int sleepDuration = new Random().Next(1, 2501);
                 Thread.Sleep(sleepDuration);
-
             }
         }
     }

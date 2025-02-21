@@ -1,10 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using SampleStack.Redis.Numbers;
 using SampleStack.Redis.PubSub;
 using StackExchange.Redis;
 
-namespace SampleStack.Redis
+namespace SampleStack.Redis.Configuration
 {
     public static class HostBuilderExtensions
     {

@@ -1,4 +1,4 @@
-﻿namespace SampleStack.Redis
+﻿namespace SampleStack.Redis.Numbers
 {
     internal class NumbersGenerator
     {
