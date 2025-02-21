@@ -22,6 +22,7 @@ namespace SampleStack.Redis.Configuration
                         AbortOnConnectFail = false,
                         ConnectTimeout = 5000,
                         EndPoints = { RedisConnectionString },
+                        LoggerFactory = cfg.GetService<ILoggerFactory>()
                     };
 
                     return ConnectionMultiplexer.Connect(configurationOptions);

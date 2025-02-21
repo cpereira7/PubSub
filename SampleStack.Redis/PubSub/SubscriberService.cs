@@ -1,4 +1,5 @@
-﻿using SampleStack.Redis.Numbers;
+﻿using Microsoft.Extensions.Logging;
+using SampleStack.Redis.Numbers;
 using StackExchange.Redis;
 
 namespace SampleStack.Redis.PubSub
@@ -6,11 +7,13 @@ namespace SampleStack.Redis.PubSub
     internal class SubscriberService : PubSubService
     {
         private const string Channel = "random-numbers";
-        private readonly NumbersProcessor numbersProcessor;
+        private readonly ILogger<SubscriberService> _logger;
+        private readonly NumbersProcessor _numbersProcessor;
 
-        public SubscriberService(IConnectionMultiplexer connectionMultiplexer, NumbersProcessor numbersProcessor) : base(connectionMultiplexer)
+        public SubscriberService(IConnectionMultiplexer connectionMultiplexer, ILogger<SubscriberService> logger, NumbersProcessor numbersProcessor) : base(connectionMultiplexer)
         {
-            this.numbersProcessor = numbersProcessor;
+            _logger = logger;
+            _numbersProcessor = numbersProcessor;
         }
 
         internal override void SubscribeToChannels()
@@ -21,9 +24,9 @@ namespace SampleStack.Redis.PubSub
 
                 base.SubscribeToChannels();
             }
-            catch (RedisConnectionException)
+            catch (RedisConnectionException ex)
             {
-                Console.WriteLine("Redis connection failed.");
+                _logger.LogError(ex, "Redis connection failed.");
                 throw;
             }
         }
@@ -37,7 +40,7 @@ namespace SampleStack.Redis.PubSub
             {
                 Console.WriteLine("Message received: " + message);
 
-                numbersProcessor.ProcessMessage(message!);
+                _numbersProcessor.ProcessMessage(message!);
             });
         }
     }

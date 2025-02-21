@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace SampleStack.Redis.Numbers
 {
@@ -6,6 +7,12 @@ namespace SampleStack.Redis.Numbers
     {
         private readonly Dictionary<string, Queue<int>> _publisherQueues = [];
         private readonly Lock _lockObj = new();
+        private readonly ILogger<NumbersProcessor> _logger;
+
+        public NumbersProcessor(ILogger<NumbersProcessor> logger)
+        {
+            _logger = logger;
+        }
 
         public void ProcessMessage(string message)
         {
@@ -33,7 +40,7 @@ namespace SampleStack.Redis.Numbers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error processing message: {ex.Message}");
+                _logger.LogError(ex, "Error processing message");
             }
         }
 
