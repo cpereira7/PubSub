@@ -11,23 +11,21 @@
       - "6379:6379"
 
   publisher:
-    build: 
-      context: ../
-      dockerfile: ./SampleStack.Redis/Dockerfile
+    image: pubsub-app:latest
     deploy: 
       replicas: 2
     environment:
       - MODE=PUB
+      - REDIS_HOST=redis:6379
     depends_on:
       - subscriber
 
   subscriber:
-    build: 
-      context: ../
-      dockerfile: ./SampleStack.Redis/Dockerfile
+    image: pubsub-app:latest
     container_name: redis_subscriber
     environment:
       - MODE=SUB
+      - REDIS_HOST=redis:6379
     depends_on:
       redis:
         condition: service_healthy

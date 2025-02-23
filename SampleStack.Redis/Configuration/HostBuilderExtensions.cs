@@ -9,7 +9,8 @@ namespace SampleStack.Redis.Configuration
 {
     public static class HostBuilderExtensions
     {
-        private const string RedisConnectionString = "redis:6379";
+        private static string RedisConnectionString = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost:6379";
+        private static string PubSubMode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
 
         public static IHostBuilder ConfigureRedisServices(this IHostBuilder builder)
         {
@@ -35,8 +36,7 @@ namespace SampleStack.Redis.Configuration
 
                 services.AddSingleton<IRedisService>(provider =>
                 {
-                    string mode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
-                    return mode == "SUB"
+                    return PubSubMode == "SUB"
                         ? provider.GetRequiredService<SubscriberService>()
                         : provider.GetRequiredService<PublisherService>();
                 });
