@@ -1,9 +1,9 @@
 ﻿namespace SampleStack.Redis.Numbers
 {
-    internal class NumberMessage
+    internal record NumberMessage
     {
-        public required string Publisher { get; set; }
-        public int Value { get; set; }
-        public DateTime Timestamp { get; set; }
+        public required string Publisher { get; init; }
+        public int Value { get; init; }
+        public DateTime Timestamp { get; init; }
     }
 }

@@ -37,6 +37,5 @@ namespace SampleStack.Redis
 
             exitEvent.Wait();
         }
-
     }
 }

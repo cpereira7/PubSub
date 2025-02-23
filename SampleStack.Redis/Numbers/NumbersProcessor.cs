@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Text.Json;
+using StackExchange.Redis;
 
 namespace SampleStack.Redis.Numbers
 {
@@ -8,10 +9,12 @@ namespace SampleStack.Redis.Numbers
         private readonly Dictionary<string, Queue<int>> _publisherQueues = [];
         private readonly Lock _lockObj = new();
         private readonly ILogger<NumbersProcessor> _logger;
+        private readonly IDatabase _database;
 
-        public NumbersProcessor(ILogger<NumbersProcessor> logger)
+        public NumbersProcessor(ILogger<NumbersProcessor> logger, IConnectionMultiplexer redis)
         {
             _logger = logger;
+            _database = redis.GetDatabase();
         }
 
         public void ProcessMessage(string message)
@@ -34,7 +37,7 @@ namespace SampleStack.Redis.Numbers
 
                         value.Enqueue(receivedMsg.Value);
 
-                        ProcessValues();
+                        ProcessAndStoreValues();
                     }
                 }
             }
@@ -44,7 +47,7 @@ namespace SampleStack.Redis.Numbers
             }
         }
 
-        private void ProcessValues()
+        private void ProcessAndStoreValues()
         {
             var publishers = new List<string>(_publisherQueues.Keys);
 
@@ -60,22 +63,38 @@ namespace SampleStack.Redis.Numbers
                 if (activePublishers.Count < 2)
                     break;
 
-                var values = new List<int>();
+                var values = new Dictionary<string, int>();
 
                 foreach (var publisher in activePublishers)
                 {
-                    values.Add(_publisherQueues[publisher].Dequeue());
+                    values.Add(publisher, _publisherQueues[publisher].Dequeue());
                 }
 
-                int totalSum = values.Sum();
-                int totalProduct = values.Aggregate(1, (acc, val) => acc * val);
-
+                var result = new NumbersResult(values);
+                
                 Console.WriteLine($"🔢 Processed {values.Count} Values:");
-                Console.WriteLine($"   Sum: {string.Join(" + ", values)} = {totalSum}");
-                Console.WriteLine($"   Product: {string.Join(" * ", values)} = {totalProduct}");
+                Console.WriteLine($"   Sum: {string.Join(" + ", values.Values)} = {result.Sum}");
+                Console.WriteLine($"   Product: {string.Join(" * ", values.Values)} = {result.Product}");
 
                 publishers.RemoveAll(p => _publisherQueues[p].Count == 0);
+                
+                _ = StoreResults(result).ContinueWith(task =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        _logger.LogError(task.Exception, "Error storing results in Redis.");
+                    }
+                }, TaskScheduler.Default);
             }
+        }
+
+        private async Task StoreResults(NumbersResult result)
+        {
+            var redisKey = "numbers:all";
+
+            var jsonResult = JsonSerializer.Serialize(result);
+            
+            await _database.ListRightPushAsync(redisKey, jsonResult);
         }
     }
 }

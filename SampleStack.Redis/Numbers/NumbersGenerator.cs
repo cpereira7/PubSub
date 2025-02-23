@@ -12,10 +12,5 @@
                 Timestamp = DateTime.UtcNow
             };
         }
-
-        public int GenerateSleepDuration()
-        {
-            return new Random().Next(1, 2501);
-        }
     }
 }
