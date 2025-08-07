@@ -17,10 +17,10 @@ namespace SampleStack.Redis.PubSub
         {
             base.SubscribeToChannels();
 
-            PublishNumbers();
+            _ = Task.Run(PublishNumbers);
         }
         
-        private void PublishNumbers()
+        private async Task PublishNumbers()
         {
             string publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
 
@@ -36,7 +36,7 @@ namespace SampleStack.Redis.PubSub
                 Console.WriteLine($"Published: {json}");
 
                 int sleepDuration = new Random().Next(1, 2501);
-                Thread.Sleep(sleepDuration);
+                await Task.Delay(sleepDuration);
             }
         }
     }
