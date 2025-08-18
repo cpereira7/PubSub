@@ -16,30 +16,20 @@ namespace SampleStack.Redis.Numbers.Messaging
             _logger = logger;
             _numbersProcessor = numbersProcessor;
         }
-
-        internal override void SubscribeToChannels()
+        
+        protected override void OnSubscribeToChannels()
         {
-            try
-            {
-                SubscriberNumbersChannel();
-
-                base.SubscribeToChannels();
-            }
-            catch (RedisConnectionException ex)
-            {
-                _logger.LogError(ex, "Redis connection failed.");
-                throw;
-            }
+            _ = Task.Run(SubscriberNumbers);
         }
 
-        private void SubscriberNumbersChannel()
+        private async Task SubscriberNumbers()
         {
             var pubsub = Redis.GetSubscriber();
             var channel = new RedisChannel(PubSubChannels.RandomNumbers, RedisChannel.PatternMode.Literal);
 
-            pubsub.Subscribe(channel, (channel, message) =>
+            await pubsub.SubscribeAsync(channel, (channel, message) =>
             {
-                Console.WriteLine("Message received: " + message);
+                _logger.LogInformation("Message received: {message}", message);
 
                 _numbersProcessor.ProcessMessage(message!);
             });

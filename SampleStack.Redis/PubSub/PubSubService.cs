@@ -37,10 +37,13 @@ namespace SampleStack.Redis.PubSub
                 CacheDisconnected?.Invoke(this, EventArgs.Empty);
         }
 
-        internal virtual void SubscribeToChannels()
+        private void SubscribeToChannels()
         {
             ChannelsSubscribed = true;
+            OnSubscribeToChannels();
         }
+
+        protected abstract void OnSubscribeToChannels();
 
         public async Task StartAsync()
         {
