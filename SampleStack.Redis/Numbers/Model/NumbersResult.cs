@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace SampleStack.Redis.Numbers;
+﻿namespace SampleStack.Redis.Numbers.Model;
 
 internal record NumbersResult
 {

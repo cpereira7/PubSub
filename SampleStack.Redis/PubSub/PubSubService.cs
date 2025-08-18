@@ -4,31 +4,31 @@ namespace SampleStack.Redis.PubSub
 {
     internal abstract class PubSubService : IRedisService
     {
-        internal IConnectionMultiplexer _redis;
-
-        internal bool ChannelsSubscribed { get; private set; }
-        public bool IsRunning => ChannelsSubscribed;
-
-        public event EventHandler? CacheDisconnected;
-        public event EventHandler? CacheReConnected;
+        internal readonly IConnectionMultiplexer Redis;
 
         protected PubSubService(IConnectionMultiplexer connectionMultiplexer)
         {
-            _redis = connectionMultiplexer;
+            Redis = connectionMultiplexer;
 
-            _redis.ConnectionRestored += OnRedisConnectionRestored;
-            _redis.ConnectionFailed += OnRedisConnectionFailed;
+            Redis.ConnectionRestored += OnRedisConnectionRestored;
+            Redis.ConnectionFailed += OnRedisConnectionFailed;
         }
-
+        
+        public event EventHandler? CacheDisconnected;
+        public event EventHandler? CacheReConnected;
+        
+        private bool ChannelsSubscribed { get; set; }
+        public bool IsRunning => ChannelsSubscribed;
+        
         private void OnRedisConnectionRestored(object? sender, ConnectionFailedEventArgs e)
         {
-            if (e.ConnectionType == ConnectionType.Subscription)
-            {
-                if (!ChannelsSubscribed)
-                    SubscribeToChannels();
+            if (e.ConnectionType != ConnectionType.Subscription) 
+                return;
+            
+            if (!ChannelsSubscribed)
+                SubscribeToChannels();
 
-                CacheReConnected?.Invoke(this, EventArgs.Empty);
-            }
+            CacheReConnected?.Invoke(this, EventArgs.Empty);
         }
 
         private void OnRedisConnectionFailed(object? sender, ConnectionFailedEventArgs e)
@@ -51,7 +51,7 @@ namespace SampleStack.Redis.PubSub
 
         public async Task StopAsync()
         {
-            ISubscriber subscriber = _redis.GetSubscriber();
+            var subscriber = Redis.GetSubscriber();
 
             await subscriber.UnsubscribeAllAsync();
 

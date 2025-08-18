@@ -1,15 +1,17 @@
 ﻿using Microsoft.Extensions.Logging;
-using SampleStack.Redis.Numbers;
+using SampleStack.Redis.Numbers.Services;
+using SampleStack.Redis.PubSub;
+using SampleStack.Redis.PubSub.Constants;
 using StackExchange.Redis;
 
-namespace SampleStack.Redis.PubSub
+namespace SampleStack.Redis.Numbers.Messaging
 {
-    internal class SubscriberService : PubSubService
+    internal class NumbersSubscriber : PubSubService
     {
-        private readonly ILogger<SubscriberService> _logger;
+        private readonly ILogger<NumbersSubscriber> _logger;
         private readonly NumbersProcessor _numbersProcessor;
 
-        public SubscriberService(IConnectionMultiplexer connectionMultiplexer, ILogger<SubscriberService> logger, NumbersProcessor numbersProcessor) : base(connectionMultiplexer)
+        public NumbersSubscriber(IConnectionMultiplexer connectionMultiplexer, ILogger<NumbersSubscriber> logger, NumbersProcessor numbersProcessor) : base(connectionMultiplexer)
         {
             _logger = logger;
             _numbersProcessor = numbersProcessor;
@@ -32,7 +34,7 @@ namespace SampleStack.Redis.PubSub
 
         private void SubscriberNumbersChannel()
         {
-            var pubsub = _redis.GetSubscriber();
+            var pubsub = Redis.GetSubscriber();
             var channel = new RedisChannel(PubSubChannels.RandomNumbers, RedisChannel.PatternMode.Literal);
 
             pubsub.Subscribe(channel, (channel, message) =>

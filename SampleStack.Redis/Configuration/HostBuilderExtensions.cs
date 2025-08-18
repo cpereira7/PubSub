@@ -1,7 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SampleStack.Redis.Numbers;
+using SampleStack.Redis.Numbers.Messaging;
+using SampleStack.Redis.Numbers.Services;
 using SampleStack.Redis.PubSub;
 using StackExchange.Redis;
 
@@ -9,8 +10,8 @@ namespace SampleStack.Redis.Configuration
 {
     public static class HostBuilderExtensions
     {
-        private static string RedisConnectionString = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost:6379";
-        private static string PubSubMode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
+        private static readonly string RedisConnectionString = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost:6379";
+        private static readonly string PubSubMode = Environment.GetEnvironmentVariable("MODE") ?? "SUB";
 
         public static IHostBuilder ConfigureRedisServices(this IHostBuilder builder)
         {
@@ -29,17 +30,14 @@ namespace SampleStack.Redis.Configuration
                     return ConnectionMultiplexer.Connect(configurationOptions);
                 });
 
-                services.AddSingleton<PublisherService>()
-                        .AddSingleton<SubscriberService>()
+                services.AddSingleton<NumbersPublisher>()
+                        .AddSingleton<NumbersSubscriber>()
                         .AddSingleton<NumbersGenerator>()
                         .AddSingleton<NumbersProcessor>();
 
-                services.AddSingleton<IRedisService>(provider =>
-                {
-                    return PubSubMode == "SUB"
-                        ? provider.GetRequiredService<SubscriberService>()
-                        : provider.GetRequiredService<PublisherService>();
-                });
+                services.AddSingleton<IRedisService>(provider => PubSubMode == "SUB"
+                    ? provider.GetRequiredService<NumbersSubscriber>()
+                    : provider.GetRequiredService<NumbersPublisher>());
             });
         }
     }

@@ -1,4 +1,4 @@
-﻿namespace SampleStack.Redis.PubSub
+﻿namespace SampleStack.Redis.PubSub.Constants
 {
     internal static class PubSubChannels
     {

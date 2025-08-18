@@ -3,39 +3,30 @@ using Microsoft.Extensions.Hosting;
 using SampleStack.Redis.Configuration;
 using SampleStack.Redis.PubSub;
 
-namespace SampleStack.Redis
+var host = Host.CreateDefaultBuilder(args).ConfigureRedisServices().Build();
+
+var exitEvent = new ManualResetEventSlim(false);
+
+var service = host.Services.GetRequiredService<IRedisService>();
+
+service.CacheDisconnected += (sender, e) =>
 {
-    internal static class Program
-    {
-        static void Main(string[] args)
-        {
-            var host = Host.CreateDefaultBuilder(args).ConfigureRedisServices().Build();
+    Console.WriteLine("Redis connection failed.");
+    exitEvent.Set();
+};
 
-            var exitEvent = new ManualResetEventSlim(false);
+service.CacheReConnected += (sender, e) =>
+{
+    Console.WriteLine("Redis connection restored.");
+};
 
-            var service = host.Services.GetRequiredService<IRedisService>();
+service.StartAsync().Wait();
 
-            service.CacheDisconnected += (sender, e) =>
-            {
-                Console.WriteLine("Redis connection failed.");
-                exitEvent.Set();
-            };
+Console.CancelKeyPress += (sender, e) =>
+{
+    Console.WriteLine("Shutting down...");
+    exitEvent.Set();
+    e.Cancel = true;
+};
 
-            service.CacheReConnected += (sender, e) =>
-            {
-                Console.WriteLine("Redis connection restored.");
-            };
-
-            service?.StartAsync().Wait();
-
-            Console.CancelKeyPress += (sender, e) =>
-            {
-                Console.WriteLine("Shutting down...");
-                exitEvent.Set();
-                e.Cancel = true;
-            };
-
-            exitEvent.Wait();
-        }
-    }
-}
+exitEvent.Wait();
