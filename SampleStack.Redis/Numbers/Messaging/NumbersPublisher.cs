@@ -37,7 +37,7 @@ internal class NumbersPublisher : PubSubService
             var json = JsonSerializer.Serialize(msg);
             await pubsub.PublishAsync(channel, json);
                 
-            _logger.LogInformation("Published: {json}", json);
+            _logger.LogInformation("Published: {Data}", json);
 
             var sleepDuration = new Random().Next(1, 2501);
             await Task.Delay(sleepDuration);

@@ -29,7 +29,7 @@ namespace SampleStack.Redis.Numbers.Messaging
 
             await pubsub.SubscribeAsync(channel, (channel, message) =>
             {
-                _logger.LogInformation("Message received: {message}", message);
+                _logger.LogInformation("Message received: {Message}", message);
 
                 _numbersProcessor.ProcessMessage(message!);
             });
