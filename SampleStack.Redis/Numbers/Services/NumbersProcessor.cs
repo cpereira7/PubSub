@@ -18,27 +18,22 @@ internal class NumbersProcessor
         _database = redis.GetDatabase();
     }
 
-    public void ProcessMessage(string message)
+    public void ProcessMessage(NumberMessage message)
     {
         try
         {
-            var receivedMsg = JsonSerializer.Deserialize<NumberMessage>(message);
-
-            if (receivedMsg == null) 
-                return;
-            
             _logger.LogInformation("Received from {Publisher}: {Value} at {Timestamp}",
-                receivedMsg.Publisher, receivedMsg.Value, receivedMsg.Timestamp);
+                message.Publisher, message.Value, message.Timestamp);
 
             lock (_lockObj)
             {
-                if (!_publisherQueues.TryGetValue(receivedMsg.Publisher, out var value))
+                if (!_publisherQueues.TryGetValue(message.Publisher, out var value))
                 {
                     value = new Queue<int>();
-                    _publisherQueues[receivedMsg.Publisher] = value;
+                    _publisherQueues[message.Publisher] = value;
                 }
 
-                value.Enqueue(receivedMsg.Value);
+                value.Enqueue(message.Value);
 
                 ProcessAndStoreValues();
             }

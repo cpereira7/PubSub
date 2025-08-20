@@ -14,7 +14,10 @@ namespace SampleStack.Redis.PubSub
 
         Task OnStartAsync();
 
-        Task SubscribeAsync(string channel, Action<RedisValue> handler); 
-        Task PublishAsync(string channel, object message);
+        Task SubscribeAsync<T>(string channel, Action<T> handler); 
+        Task SubscribeRawAsync(string channel, Action<RedisValue> handler);
+        
+        Task PublishAsync<T>(string channel, T message);
+        Task PublishRawAsync(string channel, string message);
     }
 }
