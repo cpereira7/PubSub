@@ -14,6 +14,6 @@ internal record NumbersResult
         Sum = numbers.Values.Sum();
         Product = numbers.Aggregate(1, (acc, val) => acc * val.Value);
         
-        Timestamp = DateTime.Now;
+        Timestamp = DateTime.UtcNow;
     }
 }

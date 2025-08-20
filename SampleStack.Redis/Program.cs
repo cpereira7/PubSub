@@ -22,7 +22,7 @@ service.CacheReConnected += (sender, e) =>
     Console.WriteLine("Redis connection restored.");
 };
 
-service.StartAsync().Wait();
+await service.StartAsync();
 
 Console.CancelKeyPress += (sender, e) =>
 {
