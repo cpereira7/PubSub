@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using SampleStack.Redis.Numbers.Services;
 using SampleStack.Redis.PubSub;
 using SampleStack.Redis.PubSub.Constants;
@@ -18,26 +17,22 @@ internal class NumbersPublisher : PubSubService
         _logger = logger;
     }
     
-    protected override void OnSubscribeToChannels()
+    public override async Task OnStartAsync()
     {
-        _ = Task.Run(PublishNumbers);
+        await PublishNumbers();
     }
 
     private async Task PublishNumbers()
     {
         var publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
 
-        var pubsub = Redis.GetSubscriber();
-        var channel = new RedisChannel(PubSubChannels.RandomNumbers, RedisChannel.PatternMode.Literal);
-
         while (IsRunning)
         {
             var msg = _numbersGenerator.GenerateNumberMessage(publisherId);
 
-            var json = JsonSerializer.Serialize(msg);
-            await pubsub.PublishAsync(channel, json);
+            await PublishAsync(PubSubChannels.RandomNumbers, msg);
                 
-            _logger.LogInformation("Published: {Data}", json);
+            _logger.LogInformation("Published a new message: {Data}", msg);
 
             var sleepDuration = new Random().Next(1, 2501);
             await Task.Delay(sleepDuration);

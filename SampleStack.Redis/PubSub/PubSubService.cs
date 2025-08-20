@@ -1,4 +1,5 @@
-﻿using StackExchange.Redis;
+﻿using System.Text.Json;
+using StackExchange.Redis;
 
 namespace SampleStack.Redis.PubSub
 {
@@ -40,16 +41,13 @@ namespace SampleStack.Redis.PubSub
         private void SubscribeToChannels()
         {
             ChannelsSubscribed = true;
-            OnSubscribeToChannels();
         }
-
-        protected abstract void OnSubscribeToChannels();
 
         public async Task StartAsync()
         {
             SubscribeToChannels();
-
-            await Task.CompletedTask;
+            
+            await OnStartAsync();
         }
 
         public async Task StopAsync()
@@ -59,6 +57,29 @@ namespace SampleStack.Redis.PubSub
             await subscriber.UnsubscribeAllAsync();
 
             ChannelsSubscribed = false;
+        }
+
+        public abstract Task OnStartAsync();
+
+        public async Task SubscribeAsync(string channel, Action<RedisValue> handler)
+        {
+            var sub = Redis.GetSubscriber();
+            var subChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
+
+            await sub.SubscribeAsync(subChannel, (_, message) =>
+            {
+                handler(message);
+            });
+        }
+
+        public async Task PublishAsync(string channel, object message)
+        {
+            var pub = Redis.GetSubscriber();
+            var pubChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
+            
+            var json = JsonSerializer.Serialize(message);
+            
+            await pub.PublishAsync(pubChannel, json);
         }
     }
 }

@@ -17,22 +17,16 @@ namespace SampleStack.Redis.Numbers.Messaging
             _numbersProcessor = numbersProcessor;
         }
         
-        protected override void OnSubscribeToChannels()
+        public override async Task OnStartAsync()
         {
-            _ = Task.Run(SubscriberNumbers);
+            await SubscribeAsync(PubSubChannels.RandomNumbers, HandleRandomNumbers);
         }
 
-        private async Task SubscriberNumbers()
+        private void HandleRandomNumbers(RedisValue obj)
         {
-            var pubsub = Redis.GetSubscriber();
-            var channel = new RedisChannel(PubSubChannels.RandomNumbers, RedisChannel.PatternMode.Literal);
+            _logger.LogInformation("Message received: {Message}", obj);
 
-            await pubsub.SubscribeAsync(channel, (channel, message) =>
-            {
-                _logger.LogInformation("Message received: {Message}", message);
-
-                _numbersProcessor.ProcessMessage(message!);
-            });
+            _numbersProcessor.ProcessMessage(obj.ToString()!);
         }
     }
 }

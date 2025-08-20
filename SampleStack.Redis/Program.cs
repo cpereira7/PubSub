@@ -3,7 +3,9 @@ using Microsoft.Extensions.Hosting;
 using SampleStack.Redis.Configuration;
 using SampleStack.Redis.PubSub;
 
-var host = Host.CreateDefaultBuilder(args).ConfigureRedisServices().Build();
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureRedisServices()
+    .Build();
 
 var exitEvent = new ManualResetEventSlim(false);
 
