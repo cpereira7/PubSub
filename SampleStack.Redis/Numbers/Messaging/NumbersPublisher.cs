@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace SampleStack.Redis.Numbers.Messaging;
 
-internal class NumbersPublisher : PubSubService
+internal class NumbersPublisher : RedisPublisherBase
 {
     private readonly NumbersGenerator _numbersGenerator;
     private readonly ILogger<NumbersPublisher> _logger;

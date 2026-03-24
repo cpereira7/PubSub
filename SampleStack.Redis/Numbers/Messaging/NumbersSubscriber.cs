@@ -7,7 +7,7 @@ using StackExchange.Redis;
 
 namespace SampleStack.Redis.Numbers.Messaging
 {
-    internal class NumbersSubscriber : PubSubService
+    internal class NumbersSubscriber : RedisSubscriberBase
     {
         private readonly ILogger<NumbersSubscriber> _logger;
         private readonly NumbersProcessor _numbersProcessor;
