@@ -13,7 +13,7 @@
   publisher:
     image: pubsub-app:latest
     deploy: 
-      replicas: 2
+      replicas: 1
     environment:
       - MODE=PUB
       - REDIS_HOST=redis:6379

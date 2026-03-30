@@ -1,8 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SampleStack.Redis.Numbers.Messaging;
-using SampleStack.Redis.Numbers.Services;
+using SampleStack.Redis.Messaging;
 using SampleStack.Redis.PubSub;
 using StackExchange.Redis;
 
@@ -15,6 +14,12 @@ namespace SampleStack.Redis.Configuration
 
         public static IHostBuilder ConfigureRedisServices(this IHostBuilder builder)
         {
+            builder.ConfigureLogging(logging =>
+            {
+                logging.ClearProviders();
+                logging.AddConsole();
+            });
+
             return builder.ConfigureServices((_, services) =>
             {
                 services.AddSingleton<IConnectionMultiplexer>(cfg =>
@@ -24,20 +29,18 @@ namespace SampleStack.Redis.Configuration
                         AbortOnConnectFail = false,
                         ConnectTimeout = 5000,
                         EndPoints = { RedisConnectionString },
-                        LoggerFactory = cfg.GetService<ILoggerFactory>()
+                        LoggerFactory = cfg.GetRequiredService<ILoggerFactory>()
                     };
 
                     return ConnectionMultiplexer.Connect(configurationOptions);
                 });
 
-                services.AddSingleton<NumbersPublisher>()
-                        .AddSingleton<NumbersSubscriber>()
-                        .AddSingleton<NumbersGenerator>()
-                        .AddSingleton<NumbersProcessor>();
+                services.AddSingleton<PhrasesSubscriber>();
+                services.AddSingleton<PhrasesPublisher>();
 
                 services.AddSingleton<IRedisService>(provider => PubSubMode == "SUB"
-                    ? provider.GetRequiredService<NumbersSubscriber>()
-                    : provider.GetRequiredService<NumbersPublisher>());
+                    ? provider.GetRequiredService<PhrasesSubscriber>()
+                    : provider.GetRequiredService<PhrasesPublisher>());
             });
         }
     }

@@ -1,16 +1,12 @@
-﻿using StackExchange.Redis;
-
-namespace SampleStack.Redis.PubSub;
+﻿namespace SampleStack.Redis.PubSub;
 
 internal interface IRedisService
 {
     bool IsRunning { get; }
 
-    event EventHandler CacheDisconnected;
-    event EventHandler CacheReConnected;
+    event EventHandler? CacheDisconnected;
+    event EventHandler? CacheReConnected;
         
-    Task StartAsync();
+    Task StartAsync(CancellationToken cancellationToken);
     Task StopAsync();
-
-    Task OnStartAsync();
 }

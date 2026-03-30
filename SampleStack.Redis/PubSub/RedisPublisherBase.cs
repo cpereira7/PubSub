@@ -13,19 +13,40 @@ internal abstract class RedisPublisherBase : PubSubServiceBase, IRedisPublisher
     
     public async Task PublishAsync<T>(string channel, T message)
     {
-        var pub = ConnectionMultiplexer.GetSubscriber();
-        var pubChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
+        try
+        {
+            var pub = ConnectionMultiplexer.GetSubscriber();
+            var pubChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
             
-        var json = JsonSerializer.Serialize(message);
+            var json = JsonSerializer.Serialize(message);
             
-        await pub.PublishAsync(pubChannel, json);
+            await pub.PublishAsync(pubChannel, json);
+        }
+        catch (JsonException ex)
+        {
+            Logger.LogError(ex, "Failed to serialize message for channel {Channel}", channel);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to publish message on channel {Channel}", channel);
+            throw;
+        }
     }
 
     public async Task PublishRawAsync(string channel, string message)
     {
-        var pub = ConnectionMultiplexer.GetSubscriber();
-        var pubChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
+        try
+        {
+            var pub = ConnectionMultiplexer.GetSubscriber();
+            var pubChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
             
-        await pub.PublishAsync(pubChannel, message);
+            await pub.PublishAsync(pubChannel, message);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to publish raw message on channel {Channel}", channel);
+            throw;
+        }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
 namespace SampleStack.Redis.PubSub;
@@ -18,11 +17,6 @@ internal abstract class PubSubServiceBase : IRedisService
         ConnectionMultiplexer.ConnectionFailed += OnRedisConnectionFailed;
     }
 
-    protected PubSubServiceBase()
-    {
-        throw new NotImplementedException();
-    }
-
     public event EventHandler? CacheDisconnected;
     public event EventHandler? CacheReConnected;
         
@@ -33,9 +27,8 @@ internal abstract class PubSubServiceBase : IRedisService
     {
         if (e.ConnectionType != ConnectionType.Subscription) 
             return;
-            
-        if (!ChannelsSubscribed)
-            SubscribeToChannels();
+        
+        Logger.LogInformation("Redis subscription connection restored");
 
         CacheReConnected?.Invoke(this, EventArgs.Empty);
     }
@@ -45,21 +38,20 @@ internal abstract class PubSubServiceBase : IRedisService
         if (e.ConnectionType == ConnectionType.Subscription)
             CacheDisconnected?.Invoke(this, EventArgs.Empty);
     }
-
-    private void SubscribeToChannels()
+    
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
+        Logger.LogInformation("Starting {ServiceName}...", GetType().Name);
+                    
+        await OnStartAsync(cancellationToken);
+        
         ChannelsSubscribed = true;
-    }
-
-    public async Task StartAsync()
-    {
-        SubscribeToChannels();
-            
-        await OnStartAsync();
     }
 
     public async Task StopAsync()
     {
+        Logger.LogInformation("Stopping {ServiceName}...", GetType().Name);
+        
         var subscriber = ConnectionMultiplexer.GetSubscriber();
 
         await subscriber.UnsubscribeAllAsync();
@@ -67,5 +59,5 @@ internal abstract class PubSubServiceBase : IRedisService
         ChannelsSubscribed = false;
     }
 
-    public abstract Task OnStartAsync();
+    protected abstract Task OnStartAsync(CancellationToken cancellationToken);
 }

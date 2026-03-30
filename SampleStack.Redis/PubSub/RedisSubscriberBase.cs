@@ -11,36 +11,45 @@ internal abstract class RedisSubscriberBase : PubSubServiceBase, IRedisSubscribe
     {
     }
     
-    public async Task SubscribeAsync<T>(string channel, Action<T> handler)
+    public async Task SubscribeAsync<T>(string channel, Func<T, Task> handler)
     {
         var sub = ConnectionMultiplexer.GetSubscriber();
         var subChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
-
+        
         await sub.SubscribeAsync(subChannel, (_, message) =>
         {
             try
             {
                 var deserialized = JsonSerializer.Deserialize<T>(message!);
                 if (deserialized != null)
-                {
                     handler(deserialized);
-                }
             }
             catch (JsonException ex)
             {
                 Logger.LogError(ex, "Failed to deserialize message on {Channel}", channel);
             }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Unhandled error in handler on {Channel}", channel);
+            }
         });
     }
 
-    public async Task SubscribeRawAsync(string channel, Action<RedisValue> handler)
+    public async Task SubscribeRawAsync(string channel, Func<RedisValue, Task> handler)
     {
         var sub = ConnectionMultiplexer.GetSubscriber();
         var subChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
-
+        
         await sub.SubscribeAsync(subChannel, (_, message) =>
         {
-            handler(message);
+            try
+            {
+                handler(message);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "Unhandled error in raw handler on {Channel}", channel);
+            }
         });
     }
 }

@@ -2,6 +2,9 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/runtime:9.0 AS base
+
+RUN apt-get update && apt-get install -y locales-all
+
 USER $APP_UID
 WORKDIR /app
 

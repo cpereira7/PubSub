@@ -1,7 +1,7 @@
-﻿namespace SampleStack.Redis.PubSub.Constants
+namespace SampleStack.Redis.PubSub.Constants
 {
     internal static class PubSubChannels
     {
-        public const string RandomNumbers = "random-numbers";
+        public const string Phrases = "Phrases";
     }
 }
