@@ -6,7 +6,7 @@ using StackExchange.Redis;
 
 namespace SampleStack.Redis.Messaging;
 
-internal class PhrasesPublisher : RedisPublisherBase
+internal class PhrasesPublisher : RedisPublisherBase<PhrasesPublisher>
 {
     private readonly Random _random;
 
@@ -29,27 +29,51 @@ internal class PhrasesPublisher : RedisPublisherBase
         "Access granted to resource /secure/data"
     ];
 
+    private Task? _publishTask;
+    
     public PhrasesPublisher(IConnectionMultiplexer connectionMultiplexer, ILogger<PhrasesPublisher> logger) 
         : base(connectionMultiplexer, logger)
     {
         _random = Random.Shared;
     }
 
-    protected override async Task OnStartAsync(CancellationToken cancellationToken)
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
         var publisherId = Environment.GetEnvironmentVariable("HOSTNAME") ?? "UNKNOWN";
+        
+        _publishTask = PublishLoopAsync(publisherId, cancellationToken);
+        
+        return Task.CompletedTask;
+    }
 
-        while (!cancellationToken.IsCancellationRequested)
+    protected override async Task OnStopAsync()
+    {
+        if (_publishTask is null)
+            return;
+
+        await _publishTask;
+    }
+
+    private async Task PublishLoopAsync(string publisherId, CancellationToken cancellationToken)
+    {
+        try
         {
-            var phrase = _phrases[_random.Next(_phrases.Length)];
-            var message = new CacheMessage(phrase, publisherId);
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                var phrase = _phrases[_random.Next(_phrases.Length)];
+                var message = new CacheMessage(phrase, publisherId);
             
-            await PublishAsync(PubSubChannels.Phrases, message);
+                await PublishAsync(PubSubChannels.Phrases, message);
             
-            Logger.LogInformation("Published [{MessageId}]: {Phrase}", message.MessageId, phrase);
+                Logger.LogInformation("Published [{MessageId}]: {Phrase}", message.MessageId, phrase);
 
-            var delay = _random.Next(1500, 9999);
-            await Task.Delay(delay, cancellationToken);
+                var delay = _random.Next(1500, 9999);
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            Logger.LogInformation("PublishLoop cancelled.");
         }
     }
 }

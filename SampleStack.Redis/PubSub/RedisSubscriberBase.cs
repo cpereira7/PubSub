@@ -4,25 +4,28 @@ using StackExchange.Redis;
 
 namespace SampleStack.Redis.PubSub;
 
-internal abstract class RedisSubscriberBase : PubSubServiceBase, IRedisSubscriber
+internal abstract class RedisSubscriberBase<T> : PubSubServiceBase<T>, IRedisSubscriber
 {
-    protected RedisSubscriberBase(IConnectionMultiplexer connectionMultiplexer, ILogger<RedisSubscriberBase> logger)
+    private readonly ISubscriber _subscriber;
+    protected RedisSubscriberBase(IConnectionMultiplexer connectionMultiplexer, ILogger<T> logger)
         : base(connectionMultiplexer, logger)
     {
+        _subscriber = ConnectionMultiplexer.GetSubscriber();
     }
     
     public async Task SubscribeAsync<T>(string channel, Func<T, Task> handler)
     {
-        var sub = ConnectionMultiplexer.GetSubscriber();
         var subChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
         
-        await sub.SubscribeAsync(subChannel, (_, message) =>
+        // Async void is generally discouraged, but in this case it's acceptable as event-handler callback.
+        // Exceptions are caught and logged to prevent unhandled exceptions from crashing the application.
+        await _subscriber.SubscribeAsync(subChannel,  async void (_, message) =>
         {
             try
             {
                 var deserialized = JsonSerializer.Deserialize<T>(message!);
                 if (deserialized != null)
-                    handler(deserialized);
+                    await handler(deserialized);
             }
             catch (JsonException ex)
             {
@@ -37,19 +40,25 @@ internal abstract class RedisSubscriberBase : PubSubServiceBase, IRedisSubscribe
 
     public async Task SubscribeRawAsync(string channel, Func<RedisValue, Task> handler)
     {
-        var sub = ConnectionMultiplexer.GetSubscriber();
         var subChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
         
-        await sub.SubscribeAsync(subChannel, (_, message) =>
+        await _subscriber.SubscribeAsync(subChannel, async void(_, message) =>
         {
             try
             {
-                handler(message);
+                await handler(message);
             }
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Unhandled error in raw handler on {Channel}", channel);
             }
         });
+    }
+
+    protected override async Task OnStopAsync()
+    {
+        // Note: Unsubscribing from all channels is a simple way to stop receiving messages, but it may not be suitable for all scenarios.
+        // If the multiplexer is shared across multiple services, consider implementing a more targeted unsubscription strategy.
+        await _subscriber.UnsubscribeAllAsync();
     }
 }

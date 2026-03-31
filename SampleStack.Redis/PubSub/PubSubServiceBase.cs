@@ -3,12 +3,12 @@ using StackExchange.Redis;
 
 namespace SampleStack.Redis.PubSub;
 
-internal abstract class PubSubServiceBase : IRedisService
+internal abstract class PubSubServiceBase<T> : IRedisService
 {
     protected readonly IConnectionMultiplexer ConnectionMultiplexer;
-    protected readonly ILogger<PubSubServiceBase> Logger;
-
-    protected PubSubServiceBase(IConnectionMultiplexer connectionMultiplexer, ILogger<PubSubServiceBase> logger)
+    protected readonly ILogger<T> Logger;
+    
+    protected PubSubServiceBase(IConnectionMultiplexer connectionMultiplexer, ILogger<T> logger)
     {
         ConnectionMultiplexer = connectionMultiplexer ?? throw new ArgumentNullException(nameof(connectionMultiplexer));
         Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -19,10 +19,9 @@ internal abstract class PubSubServiceBase : IRedisService
 
     public event EventHandler? CacheDisconnected;
     public event EventHandler? CacheReConnected;
-        
-    private bool ChannelsSubscribed { get; set; }
-    public bool IsRunning => ChannelsSubscribed;
-        
+    
+    public bool IsConnected => ConnectionMultiplexer.IsConnected;
+    
     private void OnRedisConnectionRestored(object? sender, ConnectionFailedEventArgs e)
     {
         if (e.ConnectionType != ConnectionType.Subscription) 
@@ -44,20 +43,15 @@ internal abstract class PubSubServiceBase : IRedisService
         Logger.LogInformation("Starting {ServiceName}...", GetType().Name);
                     
         await OnStartAsync(cancellationToken);
-        
-        ChannelsSubscribed = true;
     }
 
     public async Task StopAsync()
     {
         Logger.LogInformation("Stopping {ServiceName}...", GetType().Name);
         
-        var subscriber = ConnectionMultiplexer.GetSubscriber();
-
-        await subscriber.UnsubscribeAllAsync();
-
-        ChannelsSubscribed = false;
+        await OnStopAsync();
     }
 
+    protected virtual Task OnStopAsync() => Task.CompletedTask;
     protected abstract Task OnStartAsync(CancellationToken cancellationToken);
 }

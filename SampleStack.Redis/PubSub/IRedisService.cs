@@ -2,8 +2,7 @@
 
 internal interface IRedisService
 {
-    bool IsRunning { get; }
-
+    bool IsConnected { get; }
     event EventHandler? CacheDisconnected;
     event EventHandler? CacheReConnected;
         

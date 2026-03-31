@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Emojify;
 using Emojify.Configuration;
-using Emojify.Predictor;
 using Microsoft.Extensions.Logging;
 using SampleStack.Redis.Model;
 using SampleStack.Redis.PubSub;
@@ -10,40 +9,52 @@ using StackExchange.Redis;
 
 namespace SampleStack.Redis.Messaging;
 
-internal class PhrasesSubscriber : RedisSubscriberBase
+internal class PhrasesSubscriber : RedisSubscriberBase<PhrasesSubscriber>
 {
-    private readonly ILogger<PhrasesSubscriber> _logger;
     private readonly IDatabase _database;
 
+    private Task? _subscriptionTask;
+    
     public PhrasesSubscriber(IConnectionMultiplexer connectionMultiplexer, ILogger<PhrasesSubscriber> logger)
         : base(connectionMultiplexer, logger)
     {
-        _logger = logger;
         _database = connectionMultiplexer.GetDatabase();
         EmojifyService.Initialize(new EmojifyConfiguration() { ConfidenceThreshold = PredictionMode.Creative });
     }
 
-    protected override async Task OnStartAsync(CancellationToken cancellationToken)
+    protected override Task OnStartAsync(CancellationToken cancellationToken)
     {
-        await SubscribeAsync<CacheMessage>(PubSubChannels.Phrases, HandleMessages);
+        _subscriptionTask = SubscribeAsync<CacheMessage>(PubSubChannels.Phrases, HandleMessages);
+        
+        return Task.CompletedTask;
+    }
+    
+    protected override async Task OnStopAsync()
+    {
+        await base.OnStopAsync();
+        
+        if (_subscriptionTask is null)
+            return;
+
+        await _subscriptionTask;
     }
 
     private async Task HandleMessages(CacheMessage message)
     {
         try
         {
-            _logger.LogInformation("Received [{MessageId}] from {Publisher}: {Value} at {Timestamp}",
-                message.MessageId, message.Publisher, message.Value, message.Timestamp);
+            var originalValue = message.Value;
+            var formattedValue = EmojifyService.Emojify(originalValue);
 
-            var formatted = EmojifyService.Emojify(message.Value ?? string.Empty);
-            
-            _logger.LogInformation("Result [{MessageId}]: {Result}", message.MessageId, formatted);
+            Logger.LogInformation(
+                "Processed [{MessageId}] from {Publisher} at {Timestamp}: {OriginalValue} => {FormattedValue}",
+                message.MessageId, message.Publisher, message.Timestamp, originalValue, formattedValue);
 
-            await StorePhraseAsync(message.MessageId, message.Publisher, formatted, message.Timestamp);
+            await StorePhraseAsync(message.MessageId, message.Publisher, formattedValue, message.Timestamp);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error processing message");
+            Logger.LogError(ex, "Error processing message");
         }
     }
 

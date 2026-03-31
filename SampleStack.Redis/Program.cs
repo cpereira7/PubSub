@@ -24,12 +24,21 @@ service.CacheReConnected += (sender, e) =>
 
 await service.StartAsync(cts.Token);
 
-Console.CancelKeyPress += (sender, e) =>
+Console.CancelKeyPress += async (_, e) =>
 {
     Console.WriteLine("Shutting down...");
-    cts.Cancel();
-    exitEvent.Set();
     e.Cancel = true;
+    cts.Cancel();
+    
+    try
+    {
+        await service.StopAsync(); 
+    }
+    finally
+    {
+        exitEvent.Set();
+    }
 };
+
 
 exitEvent.Wait();
