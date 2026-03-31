@@ -14,13 +14,13 @@ internal abstract class RedisPublisherBase<T> : PubSubServiceBase<T>, IRedisPubl
         _publisher = ConnectionMultiplexer.GetSubscriber();
     }
     
-    public async Task PublishAsync<T>(string channel, T message)
+    public async Task PublishAsync<TMessage>(string channel, TMessage message)
     {
         try
         {
             var pubChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
             
-            var json = JsonSerializer.Serialize(message);
+            var json = JsonSerializer.Serialize<TMessage>(message);
             
             await _publisher.PublishAsync(pubChannel, json);
         }

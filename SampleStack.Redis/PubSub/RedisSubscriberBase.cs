@@ -13,7 +13,7 @@ internal abstract class RedisSubscriberBase<T> : PubSubServiceBase<T>, IRedisSub
         _subscriber = ConnectionMultiplexer.GetSubscriber();
     }
     
-    public async Task SubscribeAsync<T>(string channel, Func<T, Task> handler)
+    public async Task SubscribeAsync<TMessage>(string channel, Func<TMessage, Task> handler)
     {
         var subChannel = new RedisChannel(channel, RedisChannel.PatternMode.Literal);
         
@@ -23,7 +23,7 @@ internal abstract class RedisSubscriberBase<T> : PubSubServiceBase<T>, IRedisSub
         {
             try
             {
-                var deserialized = JsonSerializer.Deserialize<T>(message!);
+                var deserialized = JsonSerializer.Deserialize<TMessage>(message!);
                 if (deserialized != null)
                     await handler(deserialized);
             }
