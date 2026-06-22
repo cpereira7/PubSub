@@ -5,40 +5,27 @@ using SampleStack.Redis.PubSub;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureRedisServices()
+    .ConfigureServices(services => 
+    {
+        services.AddHostedService<RedisWorker>();
+    })
     .Build();
 
-var exitEvent = new ManualResetEventSlim(false);
-var cts = new CancellationTokenSource();
+await host.RunAsync();
 
-var service = host.Services.GetRequiredService<IRedisService>();
-
-service.CacheDisconnected += (sender, e) =>
+internal class RedisWorker(IRedisService service) : IHostedService
 {
-    Console.WriteLine("Redis connection failed.");
-};
-
-service.CacheReConnected += (sender, e) =>
-{
-    Console.WriteLine("Redis connection restored.");
-};
-
-await service.StartAsync(cts.Token);
-
-Console.CancelKeyPress += async (_, e) =>
-{
-    Console.WriteLine("Shutting down...");
-    e.Cancel = true;
-    cts.Cancel();
-    
-    try
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await service.StopAsync(); 
+        service.CacheDisconnected += (sender, e) => Console.WriteLine("Redis connection failed.");
+        service.CacheReConnected += (sender, e) => Console.WriteLine("Redis connection restored.");
+
+        await service.StartAsync(cancellationToken);
     }
-    finally
+
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        exitEvent.Set();
+        Console.WriteLine("Shutting down...");
+        await service.StopAsync();
     }
-};
-
-
-exitEvent.Wait();
+}
